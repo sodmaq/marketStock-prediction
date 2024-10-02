@@ -2,7 +2,8 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const { spawn } = require("child_process");
 const cors = require("cors");
-const yfinance = require("yahoo-finance");
+// const yfinance = require("yahoo-finance");
+const yahooFinance = require("yahoo-finance2").default;
 const { log } = require("console");
 require("dotenv").config(); // Load environment variables from .env file
 const { LocalStorage } = require("node-localstorage");
@@ -16,12 +17,16 @@ const app = express();
 app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
-// app.use(cors());
-app.use(cors({
-  origin: 'https://stock-market-prediction-theta.vercel.app',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "https://stock-market-prediction-theta.vercel.app",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
 
 app.get("/", (req, res) => {
   res.send("app is working..");
@@ -31,18 +36,49 @@ app.post("/getStockData", async (req, res) => {
   try {
     const { stockSymbol, startDate, endDate } = req.body;
 
-    const df = await yfinance.historical({
-      symbols: [stockSymbol],
-      from: startDate,
-      to: endDate,
-    });
-    res.json({ success: true, data: df });
+    console.log(
+      `Fetching data for ${stockSymbol} from ${startDate} to ${endDate}`
+    );
+
+    const queryOptions = {
+      period1: startDate,
+      period2: endDate,
+      interval: "1d",
+    };
+
+    const result = await yahooFinance.chart(stockSymbol, queryOptions);
+
+    console.log("Yahoo Finance Result:", JSON.stringify(result, null, 2));
+
+    if (result.quotes && result.quotes.length > 0) {
+      const transformedData = result.quotes.map((quote) => ({
+        date: new Date(quote.date).toISOString().split("T")[0],
+        open: quote.open,
+        high: quote.high,
+        low: quote.low,
+        close: quote.close,
+        volume: quote.volume,
+        adjclose: quote.adjclose,
+      }));
+
+      console.log("Transformed data:", transformedData);
+
+      res.json({ success: true, data: transformedData });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: "No data found for the given symbol and date range",
+      });
+    }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, error: "Internal Server Error" });
+    console.error("Error fetching stock data:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal Server Error",
+      details: error.message,
+    });
   }
 });
-
 app.post("/getnewsrapidapi", async (req, res) => {
   const axios = require("axios");
 
@@ -69,8 +105,8 @@ app.post("/getnews", async (req, res) => {
     const apiKey = process.env.FINANCIALMODELAPI; // Replace with your API key
     const page = Math.floor(Math.random() * 10) + 1;
 
-    const apiUrl = `https://financialmodelingprep.com/api/v3/fmp/articles?page=${page}&apikey=${apiKey}`;
-    
+    const apiUrl = `https://financialmodelingprep.com/api/v3/fmp/articles?page=0&size=5`;
+
     const response = await fetch(apiUrl);
 
     if (response.ok) {
@@ -92,10 +128,7 @@ app.post("/predictstock/:startdate/:enddate/:stocksymbol", async (req, res) => {
   // const { startDate, endDate, stockSymbol } = req.params;
   const startDate = req.params.startdate;
   const endDate = req.params.enddate;
-  const stockSymbol = req.params.stocksymbol;
-
-  // console.log(startDate,endDate,stockSymbol);
-  // res.json({ success: true, sdate: startDate , edate: endDate, ssymbol: stockSymbol});
+  const stockSymbol = req.params.stocksymbol.replace(".NS", "");
 
   try {
     const combinedArgs = [startDate, endDate, stockSymbol].join(",");

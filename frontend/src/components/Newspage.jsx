@@ -42,8 +42,8 @@ const NewsPage = () => {
 
         if (response.ok) {
           const data = await response.json();
-          // console.log(data);
-          // console.log(data.news.content);
+          console.log(data);
+          console.log(data.news.content);
 
           setNewsData(data.news.content);
           localStorage.setItem("newsData", JSON.stringify(data.news));

@@ -1,20 +1,21 @@
 import React from "react";
-import { FaLinkedinIn } from "react-icons/fa";
+import { CiBank } from "react-icons/ci";
+import "./Footer.css";
+
 const Footer = () => {
   return (
-    <footer className="flex justify-center bg-cyan-500 bottom-0 fixed w-full">
-      <div>
-        <a
-          href="https://www.linkedin.com/in/parth-thakkar-5b4946230/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className=""
-        >
-          <p className="flex items-center p-2 ">
-            <FaLinkedinIn size={20} className="flex mx-2" />
-            Made by<b className="ml-1 font-sans">Parth Thakkar</b>😎
-          </p>
-        </a>
+    <footer className="bg-blue-500 bottom-0 fixed w-full">
+      <div className="marquee-container">
+        <p className="marquee flex items-center p-2">
+          <CiBank size={30} className="mx-2 text-2xl" />
+          Made by
+          <b className="ml-1 font-sans font-extrabold text-2xl text-white">
+            {" "}
+            GANIYU rofiat olatundun, Olatunbosun barakat Dasola, Ayodeji
+            oluwapelumi oluwadamilola and Oladejo Toheeb Ayobami
+          </b>
+          😎
+        </p>
       </div>
     </footer>
   );
